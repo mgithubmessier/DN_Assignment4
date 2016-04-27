@@ -35,7 +35,45 @@ struct DataPacket
     bool isControl;
 };
 
+sockaddr_in address;
+int addressSize;
+
 int routingTable [6][4];
+//contains the router numbers of all neighbors
+int *neighborTable;
+//tracks the number of neighbors found in the neighborTable
+int numNeighbors = 0;
+
+//compares costs from a neighbor's routing table to the current routing table
+//updates the current routing table if necessary
+void updateRoutingTable(int **neighborsRoutingTable) {
+
+}
+/*
+first:  sends the current routing table
+second: receives neighbors' current routing tables 
+third:  then updates the current routing table to the next iteration
+*/
+void nextIteration(int s) {
+    sockaddr_in neighborAddr;
+    //send this router's routing table to all of its neighbors
+    for(int i = 0; i < numNeighbors; i++) {
+        neighborAddr.sin_port = htons(neighborTable[i]);
+        sendto(s, 
+            (void*)&routingTable, 
+            sizeof(routingTable), 
+            0, (struct sockaddr*) &neighborAddr, (socklen_t) sizeof(neighborAddr));
+    }
+    //recv routing table updates from all neighbors
+    int **neighborsRoutingTable;
+    for(int i = 0; i < numNeighbors; i++) {
+        int bytesReceived = recvfrom(s, 
+            &neighborsRoutingTable, 
+            sizeof(routingTable), 
+            0, (struct sockaddr*) &address, (socklen_t*) &addressSize);
+        updateRoutingTable(neighborsRoutingTable);
+    }
+}
 
 void printRoutingTable()
 {
@@ -49,6 +87,9 @@ void printRoutingTable()
         
         cout<<"\n";
     }
+    cout << numNeighbors << endl;
+    for(int i = 0; i < numNeighbors; i++)
+        cout << neighborTable[i] << endl;
 }
 
 void initializeBlankRoutingTable(int thisRouter, int thisRoutersPort)
@@ -73,7 +114,13 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
 {
     string currentPartOfFile;
     ifstream initalRoutingTable ("irt.txt");
-    
+    //sets the size of the neighbor table to the number of lines found in the file
+    //there is as much space as there are edges in the graph
+    neighborTable = new int
+    [count(istreambuf_iterator<char>(initalRoutingTable), 
+        istreambuf_iterator<char>(), '\n')];
+    initalRoutingTable.seekg(0);
+
     if (initalRoutingTable.is_open())
     {
         while (!initalRoutingTable.eof())
@@ -86,6 +133,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[A][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[A][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[A][2] = thisRoutersPort;
                     routingTable[A][1] = stoi(currentPartOfFile); //record the cost
@@ -94,6 +142,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[B][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[B][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[B][2] = thisRoutersPort;
                     routingTable[B][1] = stoi(currentPartOfFile); //record the cost
@@ -102,6 +151,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[C][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[C][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[C][2] = thisRoutersPort;
                     routingTable[C][1] = stoi(currentPartOfFile); //record the cost
@@ -110,6 +160,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[D][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[D][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[D][2] = thisRoutersPort;
                     routingTable[D][1] = stoi(currentPartOfFile); //record the cost
@@ -118,6 +169,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[E][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[E][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[E][2] = thisRoutersPort;
                     routingTable[E][1] = stoi(currentPartOfFile); //record the cost
@@ -126,6 +178,7 @@ void readInitialRoutingTable(string thisRouter, int thisRoutersPort)
                 {
                     initalRoutingTable >> currentPartOfFile; //get the destination port
                     routingTable[F][3] = stoi(currentPartOfFile); //record the destination port in the routing table
+                    neighborTable[numNeighbors++] = routingTable[F][3]; //record this as a neighbor
                     initalRoutingTable >> currentPartOfFile; //get the cost
                     routingTable[F][2] = thisRoutersPort;
                     routingTable[F][1] = stoi(currentPartOfFile); //record the cost
@@ -151,8 +204,9 @@ int main(int argc, char* argv[])
         exit(-1);
     }
 
-    sockaddr_in address;
-    int addressSize = sizeof(address);
+    //sockaddr_in address;
+    //int addressSize = sizeof(address);
+    addressSize = sizeof(address);
     bzero(&address,addressSize);
     address.sin_family=AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
@@ -227,6 +281,6 @@ int main(int argc, char* argv[])
     }
     
     close(s);
-  
+    delete [] neighborTable;
     return 0;
 }

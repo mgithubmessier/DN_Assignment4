@@ -3,6 +3,11 @@ iterate through irt.txt
 		create a neighbor array to send and receive over for each node
 			dynamically allocate the size of this array with "new"
 			x's neighbor array contains the port numbers of each of its neighbors 
+
 for each node x
-	for each node x's neighbor n
-		send updates on x's routing table to node n
+	while the graph has not fully converged
+		for each node x's neighbor n, where x is a file being run in parallel
+			send updates on x's routing table to node n
+		for each node x's neighbor n
+			recv update on x's routing table from n
+	exchange information between 
