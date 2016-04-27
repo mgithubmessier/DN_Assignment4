@@ -47,7 +47,13 @@ int numNeighbors = 0;
 //compares costs from a neighbor's routing table to the current routing table
 //updates the current routing table if necessary
 void updateRoutingTable(int **neighborsRoutingTable) {
-
+    for(int routerIndex = 0; routerIndex < 6; routerIndex++) {
+        int neighborCost = neighborsRoutingTable[routerIndex][1];
+        int currentCost = routingTable[routerIndex][1];
+        if(neighborCost < currentCost) {
+            routingTable[routerIndex][1] = neighborCost;
+        }
+    }
 }
 /*
 first:  sends the current routing table
@@ -87,9 +93,6 @@ void printRoutingTable()
         
         cout<<"\n";
     }
-    cout << numNeighbors << endl;
-    for(int i = 0; i < numNeighbors; i++)
-        cout << neighborTable[i] << endl;
 }
 
 void initializeBlankRoutingTable(int thisRouter, int thisRoutersPort)
